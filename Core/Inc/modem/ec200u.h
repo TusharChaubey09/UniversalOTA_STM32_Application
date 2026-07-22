@@ -9,6 +9,9 @@
 extern uint8_t otaPackageBuffer[OTA_PACKAGE_BUFFER_SIZE];
 
 extern uint8_t ec200uRxBuffer[EC200U_RX_BUFFER_SIZE];
+extern volatile uint16_t ec200uRxIndex;
+
+extern uint8_t ec200uRxByte;
 
 
 void EC200U_Init(void);
@@ -29,6 +32,6 @@ uint8_t EC200U_HTTPGet(const char *url);
 
 uint8_t EC200U_HTTPExecute(void);
 
-uint8_t EC200U_HTTPRead(uint8_t *buffer,
-                        uint32_t length);
+uint32_t EC200U_HTTPRead(uint8_t *buffer,
+                         uint32_t maxLength);
 #endif

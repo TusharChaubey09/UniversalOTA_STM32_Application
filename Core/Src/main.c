@@ -23,6 +23,8 @@
 #include "gpio.h"
 #include "w25q128.h"
 #include "ota_manager.h"
+#include "ec200u.h"
+#include "usart.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -183,5 +185,22 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
+}
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if(huart->Instance == USART1)
+    {
+        if(ec200uRxIndex < (EC200U_RX_BUFFER_SIZE - 1))
+        {
+            ec200uRxBuffer[ec200uRxIndex++] = ec200uRxByte;
+
+            ec200uRxBuffer[ec200uRxIndex] = '\0';
+        }
+
+        HAL_UART_Receive_IT(
+                &huart1,
+                &ec200uRxByte,
+                1);
+    }
 }
 #endif /* USE_FULL_ASSERT */

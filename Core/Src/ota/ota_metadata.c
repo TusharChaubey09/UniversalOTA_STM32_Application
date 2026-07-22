@@ -59,6 +59,4 @@ void OTA_MetadataLoadDummy(void)
            0,
            sizeof(gOtaMetadata.reservedExtension));
 
-    strcpy(gOtaMetadata.firmwareURL,
-           "https://server.com/firmware.ota");
 }

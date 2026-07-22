@@ -30,9 +30,6 @@ typedef struct
     uint8_t hmac[32];
 
     uint8_t reservedExtension[28];
-
-    char firmwareURL[128];
-
 } OTA_Metadata_t;
 
 #endif

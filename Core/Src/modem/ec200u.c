@@ -5,15 +5,20 @@
 
 uint8_t ec200uRxBuffer[EC200U_RX_BUFFER_SIZE];
 
+uint8_t ec200uRxByte;
+
 uint8_t otaPackageBuffer[OTA_PACKAGE_BUFFER_SIZE];
+volatile uint16_t ec200uRxIndex = 0;
 
 void EC200U_Init(void)
 {
-	 HAL_UART_Receive_IT(&huart1,
-	                        ec200uRxBuffer,
-	                        1);
-}
+    ec200uRxIndex = 0;
 
+    HAL_UART_Receive_IT(
+            &huart1,
+            &ec200uRxByte,
+            1);
+}
 void EC200U_SendAT(const char *cmd)
 {
     HAL_UART_Transmit(&huart1,
@@ -121,23 +126,54 @@ uint8_t EC200U_HTTPExecute(void)  //Perform HTTP GET, Wait up to 80 seconds
 
     return EC200U_WaitForResponse("+QHTTPGET");
 }
-uint8_t EC200U_HTTPRead(uint8_t *buffer,
-                        uint32_t length)
+uint32_t EC200U_HTTPRead(uint8_t *buffer,
+                         uint32_t maxLength)
 {
-    memset(ec200uRxBuffer, 0, EC200U_RX_BUFFER_SIZE);
+    uint32_t bytesToCopy;
 
+    /* Clear previous response */
+    memset(ec200uRxBuffer, 0, EC200U_RX_BUFFER_SIZE);
+    ec200uRxIndex = 0;
+
+    /* Request HTTP payload */
     EC200U_SendAT("AT+QHTTPREAD=80\r\n");
 
     HAL_Delay(5000);
 
-    if(!EC200U_WaitForResponse("+QHTTPREAD"))
+    /* Check modem responded */
+    if(!EC200U_WaitForResponse("CONNECT"))
     {
         return 0;
     }
 
-    memset(buffer,
-           0xAA,
-           length);
+    /* Copy received bytes */
+    bytesToCopy = ec200uRxIndex;
 
-    return 1;
+    if(bytesToCopy > maxLength)
+    {
+        bytesToCopy = maxLength;
+    }
+
+    memcpy(buffer,
+           ec200uRxBuffer,
+           bytesToCopy);
+
+    return bytesToCopy;
+}
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if(huart->Instance == USART1)
+    {
+        if(ec200uRxIndex < (EC200U_RX_BUFFER_SIZE - 1))
+        {
+            ec200uRxBuffer[ec200uRxIndex++] = ec200uRxByte;
+
+            ec200uRxBuffer[ec200uRxIndex] = '\0';
+        }
+
+        HAL_UART_Receive_IT(
+                &huart1,
+                &ec200uRxByte,
+                1);
+    }
 }

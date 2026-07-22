@@ -9,6 +9,11 @@ uint8_t OTA_PackageReadMetadata(const uint8_t *buffer,
 
 uint8_t OTA_PackageReadFirmware(uint8_t *buffer,
                                 uint32_t length);
+uint8_t OTA_PackageStoreMetadata(const uint8_t *buffer);
+
+uint8_t OTA_PackageStoreFirmware(uint32_t flashAddress,
+                                 uint8_t *buffer,
+                                 uint32_t length);
 typedef struct
 {
     OTA_Metadata_t metadata;
@@ -16,5 +21,6 @@ typedef struct
     uint8_t firmwareData[];
 
 } OTA_Package_t;
+
 
 #endif

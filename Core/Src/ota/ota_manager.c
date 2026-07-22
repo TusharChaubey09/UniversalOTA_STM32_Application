@@ -21,12 +21,6 @@ static uint32_t verifyCRC;
 void OTA_Init(void)
 {
     otaState = OTA_CHECK_UPDATE;
-    /* TODO:
-        * Replace with metadata received
-        * from the downloaded OTA package.
-        */
-
-    OTA_MetadataLoadDummy();
 }
 void OTA_Task(void)
 {
@@ -47,13 +41,20 @@ void OTA_Task(void)
 
                 if(gOtaMetadata.forceOverride)
                 {
-                    OTA_DownloadInit(gOtaMetadata.firmwareSize);
+                	OTA_Metadata_t metadata;
 
+                	OTA_MetadataRead(&metadata);
+
+                	OTA_DownloadInit(metadata.firmwareSize);
                     otaState = OTA_DOWNLOAD;
                 }
                 else
                 {
-                    OTA_DownloadInit(gOtaMetadata.firmwareSize);
+                	OTA_Metadata_t metadata;
+
+                	OTA_MetadataRead(&metadata);
+
+                	OTA_DownloadInit(metadata.firmwareSize);
 
                     otaState = OTA_DOWNLOAD;
                 }
@@ -73,22 +74,27 @@ void OTA_Task(void)
         case OTA_DOWNLOAD:
         {
             if(EC200U_HTTPInit() &&
-               EC200U_HTTPGet(gOtaMetadata.firmwareURL) &&
+            		EC200U_HTTPGet("http://YOUR_SERVER_IP/firmware.ota") &&
                EC200U_HTTPExecute())
             {
                 downloadRetryCount = 0;
 
-                if(EC200U_HTTPRead(otaChunkBuffer,
-                                   OTA_CHUNK_SIZE))
+                uint32_t bytesRead;
+
+                bytesRead = EC200U_HTTPRead(
+                                otaChunkBuffer,
+                                OTA_CHUNK_SIZE);
+
+                if(bytesRead > 0)
                 {
                     W25Q128_WriteChunk(
-                        OTA_FIRMWARE_ADDRESS +
-                        OTA_DownloadGetOffset(),
-                        otaChunkBuffer,
-                        OTA_CHUNK_SIZE);
+                            OTA_FIRMWARE_ADDRESS +
+                            OTA_DownloadGetOffset(),
+                            otaChunkBuffer,
+                            bytesRead);
 
                     OTA_DownloadUpdateOffset(
-                        OTA_CHUNK_SIZE);
+                            bytesRead);
 
                     if(OTA_DownloadComplete())
                     {
@@ -123,14 +129,41 @@ void OTA_Task(void)
                 break;
             }
 
-            if(metadata.firmwareSize == 0)
+            if(metadata.metadataVersion != OTA_METADATA_VERSION)
             {
                 otaError = OTA_ERROR_VERIFY;
                 otaState = OTA_ERROR;
                 break;
             }
 
-            if(metadata.headerSize != sizeof(OTA_Metadata_t))
+            if(metadata.headerSize != OTA_HEADER_SIZE)
+            {
+                otaError = OTA_ERROR_VERIFY;
+                otaState = OTA_ERROR;
+                break;
+            }
+
+            if(metadata.mcuFamilyID != OTA_MCU_FAMILY_ID)
+            {
+                otaError = OTA_ERROR_VERIFY;
+                otaState = OTA_ERROR;
+                break;
+            }
+            if(metadata.encryptionType != OTA_ENCRYPTION_AES256_CBC)
+            {
+                otaError = OTA_ERROR_VERIFY;
+                otaState = OTA_ERROR;
+                break;
+            }
+
+            if(metadata.hashType != OTA_HASH_HMAC_SHA256)
+            {
+                otaError = OTA_ERROR_VERIFY;
+                otaState = OTA_ERROR;
+                break;
+            }
+
+            if(metadata.firmwareSize == 0)
             {
                 otaError = OTA_ERROR_VERIFY;
                 otaState = OTA_ERROR;

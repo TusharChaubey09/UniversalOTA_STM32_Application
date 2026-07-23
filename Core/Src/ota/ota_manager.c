@@ -9,6 +9,7 @@
 #include "ota_package.h"
 #include "ota_chunk.h"
 #include "ota_download.h"
+#include "ota_config.h"
 static OTA_State_t otaState;
 static OTA_Error_t otaError = OTA_ERROR_NONE;
 static uint8_t otaRetryCount = 0;
@@ -74,7 +75,7 @@ void OTA_Task(void)
         case OTA_DOWNLOAD:
         {
             if(EC200U_HTTPInit() &&
-            		EC200U_HTTPGet("http://YOUR_SERVER_IP/firmware.ota") &&
+            		EC200U_HTTPGet(OTA_SERVER_URL) &&
                EC200U_HTTPExecute())
             {
                 downloadRetryCount = 0;

@@ -18,4 +18,6 @@
 #define OTA_PENDING_FLAG              0xA5A5A5A5UL
 #define OTA_FLAG_ADDRESS              0x000F0000UL
 
+#define OTA_SERVER_URL \
+"https://github.com/TusharChaubey09/UniversalOTA_STM32_Firmware-Packaging-Tool/releases/download/v1.0/20260723_V1.0.ota"
 #endif

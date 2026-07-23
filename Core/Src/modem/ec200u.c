@@ -81,13 +81,44 @@ uint8_t EC200U_GetSignalStrength(void)
 }
 uint8_t EC200U_HTTPInit(void)
 {
+    /* Clear RX buffer */
     memset(ec200uRxBuffer, 0, EC200U_RX_BUFFER_SIZE);
 
+    /* Select PDP Context 1 */
     EC200U_SendAT("AT+QHTTPCFG=\"contextid\",1\r\n");
 
     HAL_Delay(1000);
 
-    return EC200U_WaitForResponse("OK");
+    if(!EC200U_WaitForResponse("OK"))
+    {
+        return 0;
+    }
+
+    /* Use SSL Context 1 (required for HTTPS) */
+    memset(ec200uRxBuffer, 0, EC200U_RX_BUFFER_SIZE);
+
+    EC200U_SendAT("AT+QHTTPCFG=\"sslctxid\",1\r\n");
+
+    HAL_Delay(1000);
+
+    if(!EC200U_WaitForResponse("OK"))
+    {
+        return 0;
+    }
+
+    /* Enable HTTP response headers */
+    memset(ec200uRxBuffer, 0, EC200U_RX_BUFFER_SIZE);
+
+    EC200U_SendAT("AT+QHTTPCFG=\"responseheader\",1\r\n");
+
+    HAL_Delay(1000);
+
+    if(!EC200U_WaitForResponse("OK"))
+    {
+        return 0;
+    }
+
+    return 1;
 }
 
 uint8_t EC200U_HTTPGet(const char *url) // ec200u is about to send a URL of length N
